@@ -43,8 +43,8 @@ Your file tree should look like this:
 ```
 [SD ROOT]
     └── [FOLDER] wonder-sdfs
-        ├── [FILE] config.cfg
-        └── [FOLDER] YourFolderName/
+            ├── [FILE] config.cfg
+            └── [FOLDER] YourFolderName/
 ```
 ## Dependencies
 - [zstd](https://github.com/meta/zstd)
