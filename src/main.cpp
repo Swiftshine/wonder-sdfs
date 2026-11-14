@@ -12,16 +12,30 @@
 #include <nn/fs.h>
 
 #include <cstring>
+#include <cstdio>
 
-static bool sIsCardMounted = false;
-const char* WONDER_FOLDER_PATH = "sd:/wonder-sdfs/";
+#include "Config.h"
 
-#define VERBOSE false
+#define SHOW_VERBOSE_LOG false
+#define SHOW_INFO_LOG true
+#define SHOW_ERROR_LOG true
 
-#if VERBOSE
-    #define VERBOSE_LOG(fmt, ...) hk::diag::logLine(fmt, ##__VA_ARGS__);
+#if SHOW_VERBOSE_LOG
+    #define VERBOSE_LOG(fmt, ...) hk::diag::logLine("wonder-sdfs - VERBOSE: " #fmt, ##__VA_ARGS__);
 #else
     #define VERBOSE_LOG(...)
+#endif
+
+#if SHOW_INFO_LOG
+    #define INFO_LOG(fmt, ...) hk::diag::logLine("wonder-sdfs - INFO: " #fmt, ##__VA_ARGS__);
+#else
+    #define INFO_LG(...)
+#endif
+
+#if SHOW_ERROR_LOG
+    #define ERROR_LOG(fmt, ...) hk::diag::logLine("wonder-sdfs - ERROR: " #fmt, ##__VA_ARGS__)
+#else
+    #define ERROR_LOG(...)
 #endif
 
 bool fileExists(const char* path) {
@@ -34,33 +48,88 @@ bool stringContains(const char* string, const char* query) {
     return string != nullptr && query != nullptr && std::strstr(string, query) != nullptr;
 }
 
-HkTrampoline<nn::Result, nn::fs::FileHandle*, const char*, int> openFileHook = [](nn::fs::FileHandle* out, const char* filePath, int mode) -> nn::Result {
-    if (!sIsCardMounted) {
-        if (nn::fs::MountSdCard("sd").IsSuccess()) {
-            sIsCardMounted = true;
-            hk::diag::logLine("Mounted SD card!");
-        } else {
-            hk::diag::logLine("Failed to mount SD card.");
+class RawResource {
+public:
+    u8* mRawData = nullptr;
+    s64 mRawDataSize = 0;
+
+    ~RawResource() {
+        if (mRawData != nullptr) {
+            free(mRawData);
         }
+
+        mRawData = nullptr;
     }
 
-    // if (sIsCardMounted) {
-    //     if (std::strncmp(filePath, "content:/", 9) == 0) {
-    //         char path[1024] { 0 };
-    //         strcat(path, WONDER_SD_CARD_PATH);
-    //         strcat(path, filePath + 9);
+    bool get(const char* path, bool isString = false) {
+        if (!fileExists(path)) {
+            return false;
+        }
+
+        nn::fs::FileHandle handle;
+        nn::fs::OpenFile(&handle, path, nn::fs::OpenMode_Read);
+        nn::fs::GetFileSize(&mRawDataSize, handle);
+
+        if (mRawDataSize == 0) {
+            nn::fs::CloseFile(handle);
+            return false;
+        }
+
+        mRawData = static_cast<u8*>(malloc(mRawDataSize + static_cast<u8>(isString)));
+
+        if (mRawData == nullptr) {
+            ERROR_LOG("Failed to allocate space for file %s", path);
+            nn::fs::CloseFile(handle);
+            return false;
+        }
+
+        nn::fs::ReadFile(handle, 0, mRawData, mRawDataSize);
+        
+        if (isString) {
+            mRawData[mRawDataSize] = 0;
+        }
+
+        nn::fs::CloseFile(handle);
+        return true;
+    }
+
+};
+
+HkTrampoline<nn::Result, nn::fs::FileHandle*, const char*, int> openFileHook = [](nn::fs::FileHandle* out, const char* filePath, int mode) -> nn::Result {
+    static bool isSDCardMounted = false;
+    static bool shouldTryToMountCard = true;
+    static const char* configPath = "sd:/wonder-sdfs/config.cfg";
+
+    if (!isSDCardMounted && shouldTryToMountCard) {
+        if (nn::fs::MountSdCard("sd").IsSuccess()) {
+            INFO_LOG("Mounted SD card!");
+            isSDCardMounted = true;
             
-    //         if (fileExists(path)) {
-    //             hk::diag::logLine("[From SD]: Opening %s", path);
-    //             return openFileHook.orig(out, path, mode);
-    //         }
-    //     }
-    // }
-    
+            if (fileExists(configPath)) {
+                INFO_LOG("Found configuration file");
+
+                RawResource res;
+                if (res.get(configPath, true)) {
+                    if (Config::instance().load(reinterpret_cast<const char*>(res.mRawData))) {
+                        INFO_LOG("Configuration loading OK!");
+
+                        INFO_LOG("Folder name: %s", Config::instance().getFolderName());
+                    }
+                }
+            } else {
+                ERROR_LOG("Configuration file does not exist.");
+            }
+        } else {
+            ERROR_LOG("Failed to mount SD card.");
+        }
+
+        shouldTryToMountCard = false;
+    }
+
     if (stringContains(filePath, "content:/")) {
         VERBOSE_LOG("[From ROMFS]: Opening %s", filePath);
     } else if (stringContains(filePath, "sd:/")) {
-        hk::diag::logLine("[From SD]: Opening %s", filePath);
+        INFO_LOG("[From SD]: Opening %s", filePath);
     }
 
     return openFileHook.orig(out, filePath, mode);
@@ -89,47 +158,12 @@ HkTrampoline<nn::Result, nn::fs::FileHandle*, const char*, int> openFileHook = [
 //     checkFile(filepath);
 // }
 
-struct RawResource {
-    void* raw = nullptr;
-    s64 size = 0;
-
-    ~RawResource() {
-        if (raw != nullptr) {
-            free(raw);
-        }
-
-        raw = nullptr;
-    }
-};
-
-bool getRawResource(RawResource& out, const char* path) {
-    if (!fileExists(path)) {
-        return false;
-    }
-
-    nn::fs::FileHandle handle;
-    nn::fs::OpenFile(&handle, path, nn::fs::OpenMode_Read);
-
-    nn::fs::GetFileSize(&out.size, handle);
-
-    if (out.size == 0) {
-        nn::fs::CloseFile(handle);
-        return false;
-    }
-
-    out.raw = malloc(out.size);
-
-    if (out.raw == nullptr) {
-        nn::fs::CloseFile(handle);
-        return false;
-    }
-    
-    nn::fs::ReadFile(handle, 0, out.raw, out.size);    
-    nn::fs::CloseFile(handle);
-    return true;
-}
 
 sead::DirectResource* tryForceLevelReload(ares::ResourceBinder* binder, const sead::SafeString& path, u64 va1, u64 va2) {
+    // normally, mixing and matching malloc/free and operator new/delete is not recommended due to UB
+    // it appears to be fine here, however. it's also necessary; using either pair causes decompression/memory deallocation to fail
+    // todo: maybe look into using any default sead::Heap?
+    
     sead::DirectResource* directResource = binder->tryLoadSync(path, va1, va2);
 
     if (!stringContains(path.cstr(), "Course")) {
@@ -139,35 +173,33 @@ sead::DirectResource* tryForceLevelReload(ares::ResourceBinder* binder, const se
     // checkTestFile();
     // hk::diag::logLine("Accessing level file: %s", path.cstr());
 
-    if (directResource != nullptr) {
-        hk::diag::logLine("Attempting to re-read level file: %s", path.cstr());
+    if (directResource != nullptr && Config::instance().isLoaded()) {
+        INFO_LOG("Attempting to re-read level file: %s", path.cstr());
         char filepath[1024] = { 0 };
-        strcpy(filepath, WONDER_FOLDER_PATH);
-        strcat(filepath, path.cstr());
-        strcat(filepath, ".zs");
+        snprintf(filepath, sizeof(filepath), "sd:/wonder-sdfs/%s/%s.zs", Config::instance().getFolderName(), path.cstr());
 
-        VERBOSE_LOG("Full path: %s", filepath);
+        INFO_LOG("Full path: %s", filepath);
 
         RawResource rawRes;
-        if (getRawResource(rawRes, filepath)) {
-            hk::diag::logLine("Decompressing");
+        if (rawRes.get(filepath)) {
+            INFO_LOG("Decompressing...");
             
-            unsigned long long decompSize = ZSTD_getFrameContentSize(rawRes.raw, rawRes.size);
+            unsigned long long decompSize = ZSTD_getFrameContentSize(rawRes.mRawData, rawRes.mRawDataSize);
 
             if (decompSize == ZSTD_CONTENTSIZE_ERROR) {
-                hk::diag::logLine("Invalid ZSTD frame");
+                ERROR_LOG("Invalid ZSTD frame");
             } else if (decompSize == ZSTD_CONTENTSIZE_UNKNOWN) {
-                hk::diag::logLine("ZSTD frame does not specify decompressed size");
+                ERROR_LOG("ZSTD frame does not specify decompressed size");
             } else {
-                void* decompressed = malloc(decompSize);
+                u8* decompressed = static_cast<u8*>(malloc(decompSize));
 
                 if (decompressed != nullptr) {
-                    size_t result = ZSTD_decompress(decompressed, decompSize, rawRes.raw, rawRes.size);
+                    size_t result = ZSTD_decompress(decompressed, decompSize, rawRes.mRawData, rawRes.mRawDataSize);
 
                     if (ZSTD_isError(result)) {
-                        hk::diag::logLine("Decompression failed: %s", ZSTD_getErrorName(result));
+                        ERROR_LOG("Decompression failed: %s", ZSTD_getErrorName(result));
                     } else {
-                        hk::diag::logLine("Decompression OK!");
+                        INFO_LOG("Decompression OK!");
 
                         struct MyResource : public sead::DirectResource {
                             void setRawData(u8* data) {
@@ -181,15 +213,15 @@ sead::DirectResource* tryForceLevelReload(ares::ResourceBinder* binder, const se
 
                         MyResource* resource = static_cast<MyResource*>(directResource);
 
-                        hk::diag::logLine("Setting raw data");
-                        void* oldBuf = resource->getRawData();
-                        resource->setRawData(static_cast<u8*>(decompressed));
-                        
-                        hk::diag::logLine("Setting raw size");
+                        u8* oldBuf = resource->getRawData();
+                        resource->setRawData(&decompressed[0]);
+
                         u32 oldSize = resource->getRawSize();
                         resource->setRawSize(decompSize);
 
-                        free(oldBuf);
+                        if (oldBuf != nullptr) {
+                            delete oldBuf;
+                        }
                     }
                 }
             }
@@ -202,4 +234,5 @@ sead::DirectResource* tryForceLevelReload(ares::ResourceBinder* binder, const se
 extern "C" void hkMain() {
     openFileHook.installAtSym<"_ZN2nn2fs8OpenFileEPNS0_10FileHandleEPKci">();
     hk::hook::writeBranchLinkAtMainOffset(0x001A6BE8, tryForceLevelReload);
+    INFO_LOG("Installed all hooks!");
 }
