@@ -9,6 +9,8 @@ Reload the following files:
 - [ ] `Stage/StageLoadInfo/*`
 - [ ] `Stage/MapAnalysisInfo/*`
 
+## Supported Versions
+- 1.0.0
 
 ## Building and Usage
 *Recursively* clone the repository:
