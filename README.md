@@ -31,7 +31,6 @@ cmake --build build
 
 Move the files in the `build/exefs` folder (`main.npdm` and `subsdk9`) to the location of your LayeredFS `exefs` folder.
 
-## Usage
 Create a folder on the root of your SD card named `wonder-sdfs`. Inside that folder, create a text file called `config.cfg` and set it up as such:
 ```toml
 # This is where the romfs of your mod will go.
