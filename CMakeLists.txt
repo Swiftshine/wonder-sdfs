@@ -15,6 +15,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 set(INCLUDE_DIRS
     ${PROJECT_SOURCE_DIR}/lib/nn/include/
+    ${PROJECT_SOURCE_DIR}/lib/sead/include/
 )
 
 include_directories(
