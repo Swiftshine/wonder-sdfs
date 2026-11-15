@@ -9,7 +9,7 @@ set(INCLUDES include)
 
 set(ASM_OPTIONS "")
 set(C_OPTIONS -ffunction-sections -fdata-sections)
-set(CXX_OPTIONS "")
+set(CXX_OPTIONS "-Wno-deprecated-declarations")
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
