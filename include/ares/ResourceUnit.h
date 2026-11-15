@@ -14,6 +14,8 @@ class ResourceBinder {
 public:
     sead::DirectResource* getResource() const;
     sead::DirectResource* tryLoadSync(const sead::SafeString& path, ...);
+    // Returns if the binder is in the process of getting the resource
+    bool tryLoadAsync(const sead::SafeString&, void*, u64**);
     void finalize();
     bool isResourceReady() const;
 public:

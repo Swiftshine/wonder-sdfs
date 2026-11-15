@@ -7,6 +7,8 @@ realloc
 
 @wonder:100
 
+_init = 0x30;
+
 _ZTVN4sead10FileHandleE = 0x0354AA88;
 _ZN4sead10FileHandleD1Ev = 0x01AA2B18;
 _ZN4sead10FileHandleD0Ev = 0x01AA2B88;
