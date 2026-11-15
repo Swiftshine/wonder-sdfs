@@ -134,21 +134,21 @@ public:
     //     return true;
     // }
 
-    // static bool getBool(const Entry& entry, bool& output) {
-    //     if (strcmp(entry.value, "true") == 0 ||
-    //         strcmp(entry.value, "1") == 0) {
-    //         output = true;
-    //         return true;
-    //     }
+    static bool getBool(const Entry& entry, bool& output) {
+        if ((mValueLength == 4 && strncmp(entry.value, "true", 4) == 0) ||
+            (mValueLength == 1 && strncmp(entry.value, "1", 1) == 0)) {
+            output = true;
+            return true;
+        }
 
-    //     if (strcmp(entry.value, "false") == 0 ||
-    //         strcmp(entry.value, "0") == 0) {
-    //         output = false;
-    //         return true;
-    //     }
+        if ((mValueLength == 5 && strncmp(entry.value, "false", 5) == 0) ||
+            (mValueLength == 1 && strncmp(entry.value, "0", 1) == 0)) {
+            output = false;
+            return true;
+        }
 
-    //     return false;
-    // }
+        return false;
+    }
 
 private:
     static inline u32 mValueLength = 0;

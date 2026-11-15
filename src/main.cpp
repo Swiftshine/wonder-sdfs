@@ -37,7 +37,7 @@ HkTrampoline nn_fs_OpenFile_hook = [](TrampolineStatic(), nn::fs::FileHandle* ou
                     if (Config::instance().load(reinterpret_cast<const char*>(res.mRawData))) {
                         INFO_LOG("Configuration loading OK");
 
-                        INFO_LOG("Folder name: %s", Config::instance().getFolderName());
+                        Config::printConfiguration();   
                     }
                 }
             } else {
@@ -51,11 +51,20 @@ HkTrampoline nn_fs_OpenFile_hook = [](TrampolineStatic(), nn::fs::FileHandle* ou
     }
 
     if (StringContains(filePath, "content:/")) {
-        VERBOSE_LOG("[From ROMFS]: Opening %s", filePath);
+        if (StringContains(filePath, "wonder-sdfs-assets")) {
+            // load from SD card instead
+            char path[1024] = { 0 };
+            strcpy(path, "sd:/wonder-sdfs/");
+            strcat(path, filePath + strlen("content:/"));
+            INFO_LOG("[From SD]: Opening %s", path);
+            return orig(out, path, mode);
+        } else {
+            VERBOSE_LOG("[From ROMFS]: Opening %s", filePath);
+        }
     } else if (StringContains(filePath, "sd:/")) {
         INFO_LOG("[From SD]: Opening %s", filePath);
     }
-
+    
     return orig(out, filePath, mode);
 };
 
@@ -167,15 +176,13 @@ HkTrampoline ares_ResourceBinder_tryLoadSync_hook = [](TrampolineStatic(), ares:
         return directResource;
     }
     
-    MyDirectResource* resource = static_cast<MyDirectResource*>(directResource);
-
     const char* compressedPaths[] = {
         "BancMapUnit/",
-        "Phive/"
     };
-
+    
     for (const char* item : compressedPaths) {
         if (StringContains(path.cstr(), item)) {
+            MyDirectResource* resource = static_cast<MyDirectResource*>(directResource);
             ReloadCompressedData(resource, path.cstr());
             return directResource;
         }
@@ -192,9 +199,19 @@ HkTrampoline engine_resource_GeneralResourceFormat_initialize_hook = [](Trampoli
     return orig(_this, rawData, va1, va2);
 };
 
+void BlankedLevelCollisionHook(sead::BufferedSafeString& out, const char* fmt, const char* levelName) {
+    if (Config::instance().isLoaded() && Config::instance().useGlobalBlankBPHSC() && StringContains(levelName, "Course")) {
+        out.format("wonder-sdfs-assets/BLANK.bphsc");
+    } else {
+        out.format(fmt, levelName);
+    }
+}
+
 extern "C" void hkMain() {
     nn_fs_OpenFile_hook.installAtSym<"_ZN2nn2fs8OpenFileEPNS0_10FileHandleEPKci">();
     ares_ResourceBinder_tryLoadSync_hook.installAtSym<"_ZN4ares14ResourceBinder11tryLoadSyncERKN4sead14SafeStringBaseIcEEPvPv">();
     engine_resource_GeneralResourceFormat_initialize_hook.installAtSym<"_ZN6engine8resource21GeneralResourceFormat10initializeEPvPvPv">();
+    hk::hook::writeBranchLinkAtSym<"CreateStaticCompound_format_call">(BlankedLevelCollisionHook);
+
     INFO_LOG("Installed all hooks!");
 }

@@ -5,9 +5,17 @@ free
 realloc
 
 _ZN4ares14ResourceBinder11tryLoadSyncERKN4sead14SafeStringBaseIcEEPvPv
+_ZN4ares14ResourceBinder12tryLoadAsyncERKN4sead14SafeStringBaseIcEEPvPv
 _ZN6engine8resource21GeneralResourceFormat10initializeEPvPvPv
+_ZNK4ares14ResourceBinder11getResourceEv
 
 @wonder:100
 
 _ZN4ares14ResourceBinder11tryLoadSyncERKN4sead14SafeStringBaseIcEEPvPv = 0x0003B750;
+_ZN4ares14ResourceBinder12tryLoadAsyncERKN4sead14SafeStringBaseIcEEPvPv = 0x0005EAB0;
+_ZNK4ares14ResourceBinder11getResourceEv = 0x00257FE0;
 _ZN6engine8resource21GeneralResourceFormat10initializeEPvPvPv = 0x00244D44;
+
+_ZN4sead22BufferedSafeStringBaseIcE6formatEPKcz = 0x00027A08;
+
+CreateStaticCompound_format_call = 0x00949908;
