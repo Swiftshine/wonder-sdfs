@@ -4,10 +4,8 @@
 Reload the following files:
 
 - [x] `BancMapUnit/*`
-- [ ] `Gyml/Gfx/EnvPaletteParam/*`
-- [ ] `Stage/AreaParam/*`
-- [ ] `Stage/StageLoadInfo/*`
-- [ ] `Stage/MapAnalysisInfo/*`
+- [ ] `Phive/StaticCompoundBody/*`
+- [X] Any `.bgyml` file
 
 ## Supported Versions
 - 1.0.0
@@ -15,7 +13,7 @@ Reload the following files:
 ## Notes and Limitations
 The replacement method is case-by-case; not all files can be supported. Files that only need to be loaded once can be put into your normal LayeredFS `romfs` folder. Files that need to be repeatedly reloaded should use this patch.
 
-This patch simply loads the data and replaces at runtime; it does not change how much data is allocated for each file. If you intend to increase the size of certain files while the game is running, preallocate space in the game's size table beforehand.
+Due to using `malloc` and not the `sead` heaps, the size limitations on files externally loaded should, in theory, no longer matter.
 
 ## Building and Usage
 *Recursively* clone the repository:
