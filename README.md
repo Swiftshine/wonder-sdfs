@@ -9,6 +9,7 @@ File caching bypasses for Super Mario Bros. Wonder
 
 ## Supported Versions
 - 1.0.0
+- 1.2.1
 
 ## Notes and Limitations
 The replacement method is case-by-case; not all files can be supported. Files that only need to be loaded once can be put into your normal LayeredFS `romfs` folder. Files that need to be repeatedly reloaded should use this patch.
