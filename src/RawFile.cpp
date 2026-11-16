@@ -3,8 +3,6 @@
 #include "FSHelpers.h"
 #include "Log.h"
 
-extern void ConditionalFree(void* buf);
-
 RawFile::~RawFile() {
     if (mDoFree) {
         free(mRawData);
