@@ -132,6 +132,7 @@ void ReloadCompressedData(MyDirectResource* resource, const char* path) {
 }
 
 static void* sCurrentBGYML = nullptr;
+static u32 sCurrentBGYMLSize = 0;
 
 void ReadCurrentBGYML(const char* path) {
     if (sCurrentBGYML != nullptr) {
@@ -145,6 +146,7 @@ void ReadCurrentBGYML(const char* path) {
     }
 
     sCurrentBGYML = bgyml.data();
+    sCurrentBGYMLSize = bgyml.size();
 }
 
 HkTrampoline ares_ResourceBinder_tryLoadSync_hook = [](TrampolineStatic(), ares::ResourceBinder* _this, const sead::SafeString& path, u64 va1, u64 va2, u64 va3) -> sead::DirectResource* {
@@ -160,12 +162,14 @@ HkTrampoline ares_ResourceBinder_tryLoadSync_hook = [](TrampolineStatic(), ares:
             MyDirectResource* resource = static_cast<MyDirectResource*>(directResource);
     
             u8* old = resource->swapRawData(static_cast<u8*>(sCurrentBGYML));
-    
+            resource->setRawSize(sCurrentBGYMLSize);
+
             if (old != nullptr) {
                 delete old;
             }
     
             sCurrentBGYML = nullptr;
+            sCurrentBGYMLSize = 0;
         }
         return directResource;
     }
@@ -191,12 +195,12 @@ HkTrampoline ares_ResourceBinder_tryLoadSync_hook = [](TrampolineStatic(), ares:
     return directResource;
 };
 
-HkTrampoline engine_resource_GeneralResourceFormat_initialize_hook = [](TrampolineStatic(), u64 _this, void* rawData, u64 va1, u64 va2) -> bool {
+HkTrampoline engine_resource_GeneralResourceFormat_initialize_hook = [](TrampolineStatic(), u64 _this, void* rawData, u32 rawSize, sead::Heap* resourceHeap) -> bool {
     if (sCurrentBGYML != nullptr) {
-        return orig(_this, sCurrentBGYML, va1, va2);
+        return orig(_this, sCurrentBGYML, sCurrentBGYMLSize, resourceHeap);
     }
 
-    return orig(_this, rawData, va1, va2);
+    return orig(_this, rawData, sCurrentBGYMLSize, resourceHeap);
 };
 
 void BlankedLevelCollisionHook(sead::BufferedSafeString& out, const char* fmt, const char* levelName) {
@@ -210,7 +214,7 @@ void BlankedLevelCollisionHook(sead::BufferedSafeString& out, const char* fmt, c
 extern "C" void hkMain() {
     nn_fs_OpenFile_hook.installAtSym<"_ZN2nn2fs8OpenFileEPNS0_10FileHandleEPKci">();
     ares_ResourceBinder_tryLoadSync_hook.installAtSym<"_ZN4ares14ResourceBinder11tryLoadSyncERKN4sead14SafeStringBaseIcEEPvPv">();
-    engine_resource_GeneralResourceFormat_initialize_hook.installAtSym<"_ZN6engine8resource21GeneralResourceFormat10initializeEPvPvPv">();
+    engine_resource_GeneralResourceFormat_initialize_hook.installAtSym<"_ZN6engine8resource21GeneralResourceFormat10initializeEPvjPN4sead4HeapE">();
     hk::hook::writeBranchLinkAtSym<"CreateStaticCompound_format_call">(BlankedLevelCollisionHook);
 
     INFO_LOG("Installed all hooks!");

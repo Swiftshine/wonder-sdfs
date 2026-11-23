@@ -3,7 +3,7 @@ malloc
 free
 realloc
 _ZN4ares14ResourceBinder11tryLoadSyncERKN4sead14SafeStringBaseIcEEPvPv = 0x0003B750;
-_ZN6engine8resource21GeneralResourceFormat10initializeEPvPvPv = 0x00244D44;
+_ZN6engine8resource21GeneralResourceFormat10initializeEPvjPN4sead4HeapE  = 0x00244D44;
 _ZN4sead22BufferedSafeStringBaseIcE6formatEPKcz = 0x00027A08;
 CreateStaticCompound_format_call = 0x00949908;
 
@@ -12,7 +12,7 @@ malloc
 free
 realloc
 _ZN4ares14ResourceBinder11tryLoadSyncERKN4sead14SafeStringBaseIcEEPvPv = 0x000A1360;
-_ZN6engine8resource21GeneralResourceFormat10initializeEPvPvPv = 0x000A10A8;
+_ZN6engine8resource21GeneralResourceFormat10initializeEPvjPN4sead4HeapE  = 0x000A10A8;
 _ZN4sead22BufferedSafeStringBaseIcE6formatEPKcz = 0x0002F8E8;
 CreateStaticCompound_format_call = 0x00943D30;
 
@@ -21,15 +21,23 @@ malloc
 free
 realloc
 _ZN4ares14ResourceBinder11tryLoadSyncERKN4sead14SafeStringBaseIcEEPvPv = 0x00046BE0;
-_ZN6engine8resource21GeneralResourceFormat10initializeEPvPvPv = 0x0007D2AC;
+_ZN6engine8resource21GeneralResourceFormat10initializeEPvjPN4sead4HeapE  = 0x0007D2AC;
 _ZN4sead22BufferedSafeStringBaseIcE6formatEPKcz = 0x00033168;
 CreateStaticCompound_format_call = 0x00946C80;
+
+@wonder:110
+malloc
+free
+realloc
+
+_ZN4sead22BufferedSafeStringBaseIcE6formatEPKcz = 0x00029418;
+CreateStaticCompound_format_call = 0x0094ACC4;
 
 @wonder:121
 malloc
 free
 realloc
 _ZN4ares14ResourceBinder11tryLoadSyncERKN4sead14SafeStringBaseIcEEPvPv = 0x0003B500;
-_ZN6engine8resource21GeneralResourceFormat10initializeEPvPvPv = 0x0023D6E0;
+_ZN6engine8resource21GeneralResourceFormat10initializeEPvjPN4sead4HeapE  = 0x0023D6E0;
 _ZN4sead22BufferedSafeStringBaseIcE6formatEPKcz = 0x00029338;
 CreateStaticCompound_format_call = 0x009541DC;
