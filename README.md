@@ -3,9 +3,9 @@
 File caching bypasses for Super Mario Bros. Wonder
 
 ## Features
-- Force-reload files in the `BancMapUnit/` folder
-- Force-reload any `.bgyml` file
-- Replace all baked level collisions (`.bphsc`) with a single file.
+- [X] Force-reload files in the `BancMapUnit/` folder
+- [ ] Force-reload any `.bgyml` file~~
+- [X] Replace all baked level collisions (`.bphsc`) with a single file.
 
 ## Supported Versions
 - 1.0.0
